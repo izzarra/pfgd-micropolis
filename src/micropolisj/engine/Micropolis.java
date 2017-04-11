@@ -12,7 +12,10 @@ import java.io.*;
 import java.util.*;
 
 import static micropolisj.engine.TileConstants.*;
+import java.lang.*;
 
+
+import java.lang.*;
 /**
  * The main simulation engine for Micropolis.
  * The front-end should call animate() periodically
@@ -122,6 +125,7 @@ public class Micropolis
 	int fireStationCount;
 	int stadiumCount;
 	int coalCount;
+	int solarCount;
 	int nuclearCount;
 	int seaportCount;
 	int airportCount;
@@ -535,6 +539,7 @@ public class Micropolis
 		fireStationCount = 0;
 		stadiumCount = 0;
 		coalCount = 0;
+		solarCount = 0;
 		nuclearCount = 0;
 		seaportCount = 0;
 		airportCount = 0;
@@ -966,6 +971,7 @@ public class Micropolis
 			rv = (
 				isConductive(t) &&
 				t != NUCLEAR &&
+				t != SOLAR &&
 				t != POWERPLANT &&
 				!hasPower(loc.x, loc.y)
 				);
@@ -1030,10 +1036,34 @@ public class Micropolis
 		// Note: brownouts are based on total number of power plants, not the number
 		// of powerplants connected to your city.
 		//
-
-		int maxPower = coalCount * 700 + nuclearCount * 2000;
+		
+		//cityTime counts "weeks" (actually, 1/48'ths years)
+		
+		int powerChange = 0; // represents the monthly change to how much solar power is produced
+		double monthNum; // number to represent which month we are at (1.0 - 12.0)
+		
+		  monthNum = (Math.floor((cityTime%48)/4)); // get the month number
+		  if (monthNum == 1.0 || monthNum == 2.0){ // if it's Jan or Feb
+		  		powerChange = -100; // generates less power (500 - 100)
+		  }
+		  else if (monthNum == 3.0 || monthNum == 4.0){ // if month is Mar or Apr
+		  		powerChange = 50; // generates a little more power (500 + 50)
+		  }
+		  else if (monthNum == 5.0 || monthNum == 6.0 || monthNum == 7.0){ // if month is May, Jun, Jul
+		  		powerChange = 150;// generates more power (500+150)
+		  }
+		  else if (monthNum == 8.0 || monthNum == 9.0 || monthNum == 10.0 || monthNum == 11.0){ // if month is Aug, Sep, Oct, Nov
+		  		powerChange = 0;// generates even power (just 500)
+		  }
+		  else if (monthNum == 12.0){ //if it's Dec
+		  		powerChange = -50; // generates a little less power (500-50)
+		  }
+		  
+		  int maxPower = coalCount * 700 + nuclearCount * 2000 + (solarCount * (500 + powerChange));// max power gets power total from all power plants
+		 
 		int numPower = 0;
 
+		//int maxPower = coalCount * 700 + nuclearCount * 2000 + (solarCount * 500); original code
 		// This is kind of odd algorithm, but I haven't the heart to rewrite it at
 		// this time.
 
@@ -1461,7 +1491,7 @@ public class Micropolis
 		bb.put("INDUSTRIAL", new MapScanner(this, MapScanner.B.INDUSTRIAL));
 		bb.put("COAL", new MapScanner(this, MapScanner.B.COAL));
 		bb.put("NUCLEAR", new MapScanner(this, MapScanner.B.NUCLEAR));
-		bb.put("NEW_BUILDING", new MapScanner(this, MapScanner.B.NEW_BUILDING));
+		bb.put("SOLAR", new MapScanner(this, MapScanner.B.SOLAR));
 		bb.put("FIRESTATION", new MapScanner(this, MapScanner.B.FIRESTATION));
 		bb.put("POLICESTATION", new MapScanner(this, MapScanner.B.POLICESTATION));
 		bb.put("STADIUM_EMPTY", new MapScanner(this, MapScanner.B.STADIUM_EMPTY));
@@ -2096,6 +2126,7 @@ public class Micropolis
 	{
 		coalCount = 0;
 		nuclearCount = 0;
+		solarCount = 0;
 
 		powerPlants.clear();
 		for (int y = 0; y < map.length; y++) {
@@ -2107,6 +2138,10 @@ public class Micropolis
 				}
 				else if (tile == POWERPLANT) {
 					coalCount++;
+					powerPlants.add(new CityLocation(x,y));
+				}
+				else if (tile == SOLAR) {
+					solarCount++;
 					powerPlants.add(new CityLocation(x,y));
 				}
 			}
@@ -2520,7 +2555,7 @@ public class Micropolis
 		checkGrowth();
 
 		int totalZoneCount = resZoneCount + comZoneCount + indZoneCount;
-		int powerCount = nuclearCount + coalCount;
+		int powerCount = nuclearCount + coalCount + solarCount;
 
 		int z = cityTime % 64;
 		switch (z) {

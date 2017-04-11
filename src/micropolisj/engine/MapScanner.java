@@ -36,13 +36,14 @@ class MapScanner extends TileBehavior
 		INDUSTRIAL,
 		COAL,
 		NUCLEAR,
+		SOLAR,
 		FIRESTATION,
 		POLICESTATION,
 		STADIUM_EMPTY,
 		STADIUM_FULL,
 		AIRPORT,
 		SEAPORT,
-		NEW_BUILDING; //Placeholder enum for new building. Change to building name if making a new building
+		 //Placeholder enum for new building. Change to building name if making a new building
 	}
 
 	@Override
@@ -67,6 +68,9 @@ class MapScanner extends TileBehavior
 		case NUCLEAR:
 			doNuclearPower();
 			return;
+		case SOLAR:
+			doSolarPower();
+			return;
 		case FIRESTATION:
 			doFireStation();
 			return;
@@ -84,9 +88,6 @@ class MapScanner extends TileBehavior
 			return;
 		case SEAPORT:
 			doSeaport();
-			return;
-		case NEW_BUILDING:
-			doNewBuilding(); //Call the NEW_BUILDING placeholder function
 			return;
 		default:
 			assert false;
@@ -115,6 +116,7 @@ class MapScanner extends TileBehavior
 		boolean newPower = (
 			tile == NUCLEAR ||
 			tile == POWERPLANT ||
+			tile == SOLAR ||
 			city.hasPower(xpos,ypos)
 			);
 
@@ -191,7 +193,17 @@ class MapScanner extends TileBehavior
 
 		city.powerPlants.add(new CityLocation(xpos,ypos));
 	}
+	
+	void doSolarPower()
+	{
+		boolean powerOn = checkZonePower();
+		city.solarCount++;
+		if ((city.cityTime % 8) == 0) {
+			repairZone(SOLAR, 3);
+		}
 
+		city.powerPlants.add(new CityLocation(xpos,ypos));
+	}
 	void doNuclearPower()
 	{
 		boolean powerOn = checkZonePower();
@@ -210,15 +222,6 @@ class MapScanner extends TileBehavior
 	
 	//Placeholder for a new building
 	//Look to the other do<building name>() functions to guidance on what this function should do.
-	void doNewBuilding()
-	{
-		//Very basic building functionality. Checks for power and does "repair"
-		boolean powerOn = checkZonePower();
-		if ((city.cityTime % 8) == 0) {
-			repairZone(NEW_BUILDING, 3);
-		}
-	}
-
 	void doFireStation()
 	{
 		boolean powerOn = checkZonePower();
